@@ -1,0 +1,4 @@
+*.bak
+*.html.bak
+preview-*.png
+.DS_Store
