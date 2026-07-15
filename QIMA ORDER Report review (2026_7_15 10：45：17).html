@@ -1570,20 +1570,60 @@
  </template></rq-implicit-test-rule-widget>
 <script>
 (function () {
+  function getCollapseToggle(card) {
+    var btn = card.querySelector(":scope > .maisa-section-header .maisa-collapse-toggle, :scope > .maisa-collapse-toggle");
+    if (!btn) {
+      btn = Array.prototype.find.call(card.querySelectorAll(".maisa-collapse-toggle"), function (el) {
+        return el.closest("[data-collapse-card]") === card;
+      });
+    }
+    return btn || null;
+  }
+
+  function getAccordionPeers(card) {
+    var peers = [];
+    var el = card.previousElementSibling;
+    while (el) {
+      if (el.matches && el.matches("[data-collapse-card].maisa-product-card")) {
+        peers.unshift(el);
+        el = el.previousElementSibling;
+        continue;
+      }
+      break;
+    }
+    peers.push(card);
+    el = card.nextElementSibling;
+    while (el) {
+      if (el.matches && el.matches("[data-collapse-card].maisa-product-card")) {
+        peers.push(el);
+        el = el.nextElementSibling;
+        continue;
+      }
+      break;
+    }
+    return peers;
+  }
+
+  function setCollapsed(card, collapsed) {
+    card.classList.toggle("is-collapsed", collapsed);
+    var btn = getCollapseToggle(card);
+    if (btn) btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  }
+
   function initCollapse(root) {
     root.querySelectorAll("[data-collapse-card]").forEach(function (card) {
-      var btn = card.querySelector(":scope > .maisa-section-header .maisa-collapse-toggle, :scope > .maisa-collapse-toggle");
-      if (!btn) {
-        // fallback: first toggle that is not inside a nested [data-collapse-card]
-        btn = Array.prototype.find.call(card.querySelectorAll(".maisa-collapse-toggle"), function (el) {
-          return el.closest("[data-collapse-card]") === card;
-        });
-      }
+      var btn = getCollapseToggle(card);
       if (!btn || btn.dataset.bound === "1") return;
       btn.dataset.bound = "1";
       btn.addEventListener("click", function () {
-        var collapsed = card.classList.toggle("is-collapsed");
-        btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        var willExpand = card.classList.contains("is-collapsed");
+        if (willExpand) {
+          getAccordionPeers(card).forEach(function (peer) {
+            setCollapsed(peer, peer !== card);
+          });
+        } else {
+          setCollapsed(card, true);
+        }
       });
     });
   }
