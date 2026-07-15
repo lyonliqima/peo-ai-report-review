@@ -1575,8 +1575,16 @@
 <script>
 (function () {
 
+
+  function getDirectCollapseCards(group) {
+    return Array.prototype.filter.call(group.children, function (el) {
+      return el.nodeType === 1 && el.hasAttribute("data-collapse-card");
+    });
+  }
+
   function getCollapseToggle(card) {
-    var btn = card.querySelector(":scope > .maisa-section-header .maisa-collapse-toggle, :scope > .maisa-collapse-toggle");
+    var header = card.querySelector(":scope > .maisa-section-header");
+    var btn = header ? header.querySelector(".maisa-collapse-toggle") : null;
     if (!btn) {
       btn = Array.prototype.find.call(card.querySelectorAll(".maisa-collapse-toggle"), function (el) {
         return el.closest("[data-collapse-card]") === card;
@@ -1593,24 +1601,33 @@
   }
 
   function getAccordionPeers(card) {
-    var group = card.closest("[data-accordion-group]");
-    if (group) {
-      return Array.prototype.slice.call(group.querySelectorAll(":scope > [data-collapse-card]"));
+    var group = card.parentElement;
+    if (group && group.hasAttribute("data-accordion-group")) {
+      return getDirectCollapseCards(group);
     }
-    // fallback: consecutive product-card siblings
     var peers = [];
     var el = card.previousElementSibling;
-    while (el && el.matches && el.matches("[data-collapse-card]")) {
+    while (el && el.hasAttribute("data-collapse-card")) {
       peers.unshift(el);
       el = el.previousElementSibling;
     }
     peers.push(card);
     el = card.nextElementSibling;
-    while (el && el.matches && el.matches("[data-collapse-card]")) {
+    while (el && el.hasAttribute("data-collapse-card")) {
       peers.push(el);
       el = el.nextElementSibling;
     }
     return peers;
+  }
+
+  function initAccordionDefaults(root) {
+    root.querySelectorAll("[data-accordion-group]").forEach(function (group) {
+      var cards = getDirectCollapseCards(group);
+      if (!cards.length) return;
+      cards.forEach(function (card, index) {
+        setCollapsed(card, index !== 0);
+      });
+    });
   }
 
   function initCollapse(root) {
@@ -1627,18 +1644,13 @@
           peers.forEach(function (peer) {
             setCollapsed(peer, peer !== card);
           });
-        } else {
-          // already open: if peers also open, become exclusive; else close self
-          var othersOpen = peers.some(function (peer) {
-            return peer !== card && !peer.classList.contains("is-collapsed");
+        } else if (peers.length > 1) {
+          // keep exclusive: reopen self means keep open / close others
+          peers.forEach(function (peer) {
+            setCollapsed(peer, peer !== card);
           });
-          if (othersOpen) {
-            peers.forEach(function (peer) {
-              setCollapsed(peer, peer !== card);
-            });
-          } else {
-            setCollapsed(card, true);
-          }
+        } else {
+          setCollapsed(card, true);
         }
       });
     });
@@ -1745,6 +1757,7 @@
 
   function boot() {
     initCollapse(document);
+    initAccordionDefaults(document);
     initSplitResize();
   }
 
