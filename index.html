@@ -1641,17 +1641,18 @@
         var peers = getAccordionPeers(card);
         var isCollapsed = card.classList.contains("is-collapsed");
         if (isCollapsed) {
+          // Open this card; close siblings (exclusive accordion)
           peers.forEach(function (peer) {
             setCollapsed(peer, peer !== card);
           });
-        } else if (peers.length > 1) {
-          // keep exclusive: reopen self means keep open / close others
-          peers.forEach(function (peer) {
-            setCollapsed(peer, peer !== card);
-          });
-        } else {
-          setCollapsed(card, true);
+          return;
         }
+        // Already open: if this is the only open card in the group, keep it open
+        if (peers.length > 1) {
+          return;
+        }
+        // Lone card (e.g. Quantity): allow toggle closed
+        setCollapsed(card, true);
       });
     });
   }
