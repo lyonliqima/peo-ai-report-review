@@ -1645,14 +1645,10 @@
           peers.forEach(function (peer) {
             setCollapsed(peer, peer !== card);
           });
-          return;
+        } else {
+          // Allow closing even the last open card (all three can collapse)
+          setCollapsed(card, true);
         }
-        // Already open: if this is the only open card in the group, keep it open
-        if (peers.length > 1) {
-          return;
-        }
-        // Lone card (e.g. Quantity): allow toggle closed
-        setCollapsed(card, true);
       });
     });
   }
